@@ -1,21 +1,10 @@
-import { Ticker, Container, Sprite, Text } from "pixi.js";
+import { Container, Ticker } from "pixi.js";
+import { Group } from "tweedle.js";
 import { CircularProgressBar } from '@pixi/ui';
-
-const SUCCESS_MODIFIER = 0.05;
-const clamp = (val: number, min: number, max: number) => Math.min(Math.max(val, min), max)
+import { Attack } from './attack';
+import { AnimatedText } from "./animated_text";
 
 export class Scene extends Container {
-    private readonly screenWidth: number;
-    private readonly screenHeight: number;
-
-    private timer: number = 0;
-    private timerDurationInMs: number = 1000;
-    private numberOfSuccess = 0;
-    private actionTiming = {
-        start: 450,
-        end: 550
-    };
-
 
     private progressBar = new CircularProgressBar({
         backgroundColor: 0x000000,
@@ -26,7 +15,8 @@ export class Scene extends Container {
         value: 50,
         cap: 'round'
      });
-    constructor(screenWidth: number, screenHeight: number) {
+
+    constructor(private readonly screenWidth: number, private readonly screenHeight: number) {
         super();
 
         this.screenWidth = screenWidth;
@@ -34,36 +24,16 @@ export class Scene extends Container {
 
         this.progressBar.x = 100;
         this.progressBar.y = 100;
+        const myAttack = new Attack(this.progressBar);
+        myAttack.addEventListener('success', (e) => {
+            AnimatedText.Create(this, 'success', { x: this.progressBar.x + 10, y: this.progressBar.y + 100 }, 200);
+        });
         this.addChild(this.progressBar);
-
         Ticker.shared.add(this.update, this);
-
-         // No pixi here, All HTML DOM baby!
-         document.addEventListener("keydown", this.onKeyPress.bind(this));
     }
 
     private update(): void {
-       this.timer += (Ticker.shared.elapsedMS * (1 + (SUCCESS_MODIFIER * clamp(this.numberOfSuccess, 1, 10))));
-       if (this.timer > this.timerDurationInMs) {
-        this.timer = 0;
-       }
-       this.progressBar.progress = Math.ceil(this.timer / this.timerDurationInMs * 100);
-    }
-
-    private onKeyPress(e: KeyboardEvent) {
-        if (e.repeat)
-            return;
-        if (e.code === 'KeyE')
-            return this.action();
-    }
-
-    private action() {
-        if (this.timer >= this.actionTiming.start && this.timer <= this.actionTiming.end) {
-            this.timer = 0;
-            this.numberOfSuccess++;
-        } else {
-            this.timer = 0;
-            this.numberOfSuccess = 0;
-        }
+        //You need to update a group for the tweens to do something!
+        Group.shared.update()
     }
 }
